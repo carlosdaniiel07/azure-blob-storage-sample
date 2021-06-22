@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using TemplateNetCore.Domain.Dto.Users;
@@ -12,5 +13,6 @@ namespace TemplateNetCore.Domain.Interfaces.Users
         Guid GetLoggedUserId(ClaimsPrincipal claims);
         Task<GetLoginResponseDto> Login(PostLoginDto postLoginDto);
         Task SignUp(User user);
+        Task<GetUpdateProfilePhotoResponse> UpdateProfilePhoto(Stream file, string contentType);
     }
 }

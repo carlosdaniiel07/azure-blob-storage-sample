@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Azure.Storage.Blobs;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using TemplateNetCore.Domain.Dto.Users;
@@ -14,12 +18,14 @@ namespace TemplateNetCore.Service.Users
         private readonly IUnityOfWork _unityOfWork;
         private readonly IHashService _hashService;
         private readonly ITokenService _tokenService;
+        private readonly string _blobConnectionString;
 
-        public UserService(IUnityOfWork unityOfWork, IHashService hashService, ITokenService tokenService)
+        public UserService(IUnityOfWork unityOfWork, IHashService hashService, ITokenService tokenService, IConfiguration configuration)
         {
             _unityOfWork = unityOfWork;
             _hashService = hashService;
             _tokenService = tokenService;
+            _blobConnectionString = configuration.GetValue<string>("AzureBlobStorageConnectionString");
         }
 
         public async Task<User> GetById(Guid id)
@@ -70,6 +76,45 @@ namespace TemplateNetCore.Service.Users
 
             await _unityOfWork.UserRepository.AddAsync(user);
             await _unityOfWork.CommitAsync();
+        }
+
+        public async Task<GetUpdateProfilePhotoResponse> UpdateProfilePhoto(Stream file, string contentType)
+        {
+            var isValidFile = IsValidFile(contentType);
+
+            if (!isValidFile)
+            {
+                throw new BusinessRuleException("Este tipo de arquivo não é válido!");
+            }
+
+            var extension = GetExtensionByContentType(contentType);
+            var fileName = $"{Guid.NewGuid()}.{extension}";
+            var blobContainerName = "users";
+            var blobClient = new BlobClient(_blobConnectionString, blobContainerName, fileName);
+
+            await blobClient.UploadAsync(file);
+
+            return new GetUpdateProfilePhotoResponse
+            {
+                Uri = blobClient.Uri.AbsoluteUri
+            };
+        }
+
+        private bool IsValidFile(string contentType)
+        {
+            var allowedTypes = new HashSet<string>()
+            {
+                "image/jpeg",
+                "image/png"
+            };
+
+            return allowedTypes.Contains(contentType);
+        }
+
+        private string GetExtensionByContentType(string contentType)
+        {
+            var value = contentType.Split("/");
+            return value[1];
         }
     }
 }

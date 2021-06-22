@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 using TemplateNetCore.Domain.Dto.Users;
 using TemplateNetCore.Domain.Entities.Users;
 using TemplateNetCore.Domain.Interfaces.Users;
@@ -31,6 +32,13 @@ namespace TemplateNetCore.Api.Controllers.Users
         public async Task<ActionResult<GetLoginResponseDto>> Login([FromBody] PostLoginDto postLoginDto)
         {
             return Ok(await _service.Login(postLoginDto));
+        }
+
+        [HttpPut("users/profile-image")]
+        public async Task<ActionResult<GetUpdateProfilePhotoResponse>> UpdateProfileImage([FromForm] IFormFile file)
+        {
+            var response = await _service.UpdateProfilePhoto(file.OpenReadStream(), file.ContentType);
+            return Ok(response);
         }
     }
 }
